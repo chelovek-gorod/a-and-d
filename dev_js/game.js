@@ -4,7 +4,7 @@ import Background from './background'
 import GameIU from './gameUI'
 import GameMap from './gameMap'
 import { smoothShowElement } from './functions'
-import { playMusic, stopMusic } from './sound'
+import { playMusic, stopMusic, setMusicList } from './sound'
 import { EventHub, events } from './events'
 import FullScreenMessage from './fullscreen'
 import Opponent from './training'
@@ -40,7 +40,7 @@ export function startGame() {
         // callback
     })
     
-    playMusic()
+    setMusicList("menu")
 
     EventHub.on( events.startTraining, startTraining )
 }
@@ -54,6 +54,7 @@ function startTraining() {
 
     let opponent = new Opponent()
     gameUI.start(opponent)
+    setMusicList("game")
 }
 
 addEventListener('keyup', (event) => {

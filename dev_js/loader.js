@@ -69,19 +69,12 @@ const soundsNumber = Object.keys(sounds).length
 for (let se in sounds) sounds[se] = paths.sounds + sounds[se]
 
 export const music = {
-    bgm0: 'bgm_0.mp3',
-    bgm1: 'bgm_1.mp3',
-    bgm2: 'bgm_2.mp3',
-    bgm3: 'bgm_3.mp3',
-    bgm4: 'bgm_4.mp3',
-    bgm5: 'bgm_5.mp3',
-    bgm6: 'bgm_6.mp3',
-    bgm7: 'bgm_7.mp3',
-    bgm8: 'bgm_8.mp3',
-    bgm9: 'bgm_9.mp3',
-    /* more... */
+    game: ['bgm_0.mp3', 'bgm_1.mp3', 'bgm_2.mp3', 'bgm_3.mp3', 'bgm_4.mp3', 'bgm_5.mp3', 'bgm_6.mp3',],
+    menu: ['bgm_menu.mp3'],
+    lose: ['bgm_lose.mp3'],
+    win: ['bgm_win.mp3'],
 }
-for (let bgm in music) music[bgm] = paths.music + music[bgm]
+for (let bgm in music) music[bgm] = music[bgm].map(fileName => paths.music + fileName)
 
 export const fonts = {
     black: 'Roboto-Black.ttf',

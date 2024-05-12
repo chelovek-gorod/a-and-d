@@ -25,6 +25,18 @@ let bgMusicList = null
 let bgMusicIndex = 0
 let bgMusic = null
 
+export function setMusicList(musicListName) {
+    if (bgMusic) {
+        bgMusic.pause()
+        bgMusic = null
+        sound.remove('bgm')
+    }
+    bgMusicIndex = 0
+    bgMusicList = music[musicListName]
+    if (bgMusicList.length > 1) bgMusicList.sort( () => Math.random() - 0.5 )
+    playMusic()
+}
+
 export function stopMusic() {
     if (!bgMusic) return
     bgMusic.pause()
@@ -35,7 +47,6 @@ export function playMusic() {
 
     if (bgMusic) return bgMusic.isPlaying ? null : bgMusic.resume()
 
-    if (!bgMusicList) bgMusicList = Object.values(music)
     bgMusicPlay()
 }
 

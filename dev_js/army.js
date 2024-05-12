@@ -1,7 +1,6 @@
-import { TilingSprite, Sprite, Container, Text, AnimatedSprite, Graphics } from "pixi.js"
+import { Sprite, AnimatedSprite, Graphics } from "pixi.js"
 import { sprites, sounds } from "./loader"
-import { textStyles } from "./fonts"
-import { EventHub, events, setBaseDamageFrom } from './events'
+import { setBaseDamageFrom } from './events'
 import { state } from './state'
 import { playSound } from './sound'
 import { tickerAdd, tickerRemove, removeSprite } from "./application"
@@ -11,6 +10,7 @@ import Effect from "./effects"
 
 const baseDistance = 100
 const speedRate = 0.2
+const shadowOffsetY = 64
 
 export class BombCarrier extends AnimatedSprite {
     constructor(startPoint, sprite_atlas, target, owner) {
@@ -26,7 +26,7 @@ export class BombCarrier extends AnimatedSprite {
 
 export class Spider extends AnimatedSprite {
     constructor(startPoint, sprite_atlas, target, owner) {
-        super(sprites[sprite_atlas].animations.spider_walk)
+        super(sprites[sprite_atlas].animations.spider)
         turnSpriteToTarget(this, target, Infinity)
         if (sprite_atlas.indexOf('red') >= 0) gameMap.ground.addChild(this)
         this.animationSpeed = 0.5
@@ -44,6 +44,13 @@ export class Plane extends Sprite {
         this.init('plane', startPoint, owner, target)
         this.size = 32
         this.damageType = 'air'
+
+        this.shadow = new Sprite(sprites[sprite_atlas].textures.plane_shadow)
+        this.shadow.anchor.set(0.5)
+        this.shadow.position.x = startPoint.x
+        this.shadow.position.y = startPoint.y + shadowOffsetY
+        turnSpriteToTarget(this.shadow, target, Infinity)
+        gameMap.shadows.addChild(this.shadow)
     }
 }
 
@@ -54,6 +61,13 @@ export class Airship extends Sprite {
         this.init('airship', startPoint, owner, target)
         this.size = 64
         this.damageType = 'air'
+
+        this.shadow = new Sprite(sprites[sprite_atlas].textures.airship_shadow)
+        this.shadow.anchor.set(0.5)
+        this.shadow.position.x = startPoint.x
+        this.shadow.position.y = startPoint.y + shadowOffsetY
+        turnSpriteToTarget(this.shadow, target, Infinity)
+        gameMap.shadows.addChild(this.shadow)
     }
 }
 
@@ -90,6 +104,10 @@ const armyMixin = {
 
         moveSprite(this, this.speed * delta)
         if ( getDistance(this, this.target) < baseDistance ) return this.delete(true)
+        if (this.damageType === 'air') {
+            this.shadow.position.x = this.position.x
+            this.shadow.position.y = this.position.y + shadowOffsetY
+        }
         
         gameMap.bullets.children.forEach( bullet => {
             if ( getDistance(this, bullet) < this.size ) {
@@ -120,6 +138,7 @@ const armyMixin = {
             new Effect(this.position.x, this.position.y, 'explosion_192')
         }
         playSound(sounds.explosion)
+        if (this.damageType === 'air') removeSprite(this.shadow)
         removeSprite(this.hpBar)
         tickerRemove(this)
         removeSprite(this)

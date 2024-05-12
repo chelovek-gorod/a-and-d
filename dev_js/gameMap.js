@@ -1,7 +1,6 @@
-import { TilingSprite, Sprite, Container, Text, AnimatedSprite } from "pixi.js"
+import { Sprite, Container, AnimatedSprite } from "pixi.js"
 import { sprites, sounds } from "./loader"
-import { textStyles } from "./fonts"
-import { EventHub, events, setHelpText, resetAddTower, componentsOnChange } from './events'
+import { EventHub, events, resetAddTower, componentsOnChange } from './events'
 import { state } from './state'
 import { playSound } from './sound'
 import { tickerAdd, tickerRemove } from "./application"
@@ -45,6 +44,8 @@ const towersToBuildList = []
 
 let trees = []
 let treeIndex = 0
+let lastLineTrees = []
+let currentLineTrees = []
 
 function setTrees(bgName) {
     if (bgName === 'background_tile_1') trees = [1, 2, 3]
@@ -57,12 +58,15 @@ let treeSteps = Math.ceil(Math.random() * 5)
 function addTree(x, y) {
     treeSteps--
     if (treeSteps === 0) {
+        if (lastLineTrees.includes(x)) return treeSteps += Math.ceil(Math.random() * 5)
+
         treeSteps = 3 + Math.floor(Math.random() * 5)
 
         treeIndex++
         if (treeIndex === trees.length) treeIndex = 0
 
         new Tree(x, y, trees[treeIndex])
+        currentLineTrees.push(x)
     }
 }
 
@@ -231,7 +235,11 @@ class GameMap extends Container {
                 const pointY = startY + line * settings.ceilSize
 
                 if (mapScheme[line][index] !== 'b') addTree(pointX, pointY)
-                if (index === mapScheme[line].length - 1) addTree(pointX + settings.ceilSize, pointY)
+                if (index === mapScheme[line].length - 1) {
+                    addTree(pointX + settings.ceilSize, pointY)
+                    lastLineTrees = [...currentLineTrees]
+                    currentLineTrees = []
+                }
                 if (line === mapScheme.length - 1) {
                     addTree(pointX, pointY + settings.ceilSize)
                     if (index === mapScheme[line].length - 1) addTree(pointX + settings.ceilSize, pointY + settings.ceilSize)

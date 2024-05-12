@@ -233,7 +233,7 @@ class TopSidebar extends TilingSprite {
         this.height = settings.sidebarTopHeight
 
         this.attack_slot_bombCarrier = new AttackSlot( sprites.player_blue.textures.bomb_carrier_0, 0, 'bombCarrier', this )
-        this.attack_slot_spider = new AttackSlot( sprites.player_blue.textures.spider_walk_0, 1, 'spider', this )
+        this.attack_slot_spider = new AttackSlot( sprites.player_blue.textures.spider_0, 1, 'spider', this )
         this.attack_slot_plane = new AttackSlot( sprites.player_blue.textures.plane, 2, 'plane', this )
         this.attack_slot_airship = new AttackSlot( sprites.player_blue.textures.airship, 3, 'airship', this )
 
@@ -856,7 +856,7 @@ class Controller extends Container {
         this.repair = new ControllerItem('repair', sprites.ui_base_repair, 0.6, 60, 36)
         
         this.bombCarrier = new ControllerItem('bombCarrier', sprites.player_blue.textures.bomb_carrier_0, 0.5, 40, 36)
-        this.spider = new ControllerItem('spider', sprites.player_blue.textures.spider_walk_0, 1, 40, 36)
+        this.spider = new ControllerItem('spider', sprites.player_blue.textures.spider_0, 1, 40, 36)
         this.plane = new ControllerItem('plane', sprites.player_blue.textures.plane, 0.5, 40, 36)
         this.airship = new ControllerItem('airship', sprites.player_blue.textures.airship, 0.25, 40, 36)
 

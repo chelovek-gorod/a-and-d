@@ -29,7 +29,7 @@ class MenuButton extends Sprite {
 
     getHover(isOnHover) {
         this.text.style = isOnHover ? textStyles.buttons_menu_hover : textStyles.buttons_menu
-        if (isOnHover) playSound(sounds.slash)
+        if (isOnHover) playSound(sounds.remove)
     }
 }
 

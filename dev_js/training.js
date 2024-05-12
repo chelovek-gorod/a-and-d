@@ -33,7 +33,7 @@ const settings = {
         plane: 3,
         airship: 2,
     },
-    armyAddTimeout: 15 * 60
+    armyAddTimeout: 10 * 60
 }
 
 class Opponent {
@@ -50,6 +50,8 @@ class Opponent {
         this.army.sort( () => Math.random() - 0.5 )
         this.armyIndex = Math.floor(Math.random() * this.army.length)
         this.armyAddTimeout = settings.armyAddTimeout
+
+        EventHub.on(events.startAttackWave, this.nextWave.bind(this))
     }
 
     update(frame) {
@@ -60,7 +62,6 @@ class Opponent {
 
         if (this.armyAddTimeout <= frame) {
             this.armyAddTimeout += settings.armyAddTimeout
-            if(settings.armyAddTimeout > 60) settings.armyAddTimeout--
 
             const armyType = this.army[this.armyIndex]
             state.opponent.attack[armyType].count++
@@ -68,6 +69,10 @@ class Opponent {
             this.armyIndex++
             if (this.armyIndex === this.army.length) this.armyIndex = 0
         }
+    }
+
+    nextWave() {
+        settings.armyAddTimeout = Math.ceil( settings.armyAddTimeout / (state.currentWave * 2) )
     }
 }
 

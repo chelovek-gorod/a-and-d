@@ -1,5 +1,5 @@
 export const state = {
-    addFramesSteps: [Infinity, 300, 200, 133, 89, 59, 40, 26, 18, 12, 8, 5, 3],
+    addFramesSteps: [Infinity, 210, 135, 90, 60, 40, 24, 15, 9, 6],
     attackTimeout: 0,
     nexUnitTimeout: 0,
     waveTimeouts: [
@@ -7,13 +7,13 @@ export const state = {
         120 * 60,
         60 * 60,
     ],
-    nexUnitDelays: [60, 40, 30],
+    nexUnitDelays: [60, 50, 40],
     currentWave: 0,
 
     player: {
         totalOreMined : 0,
         energy: {
-            used: 4, // use of energy
+            used: 3, // use of energy
             max: 5,  // all energy slots
             upgrade: {
                 components: 6,
@@ -23,8 +23,8 @@ export const state = {
         },
         ore: {
             count: 0, // current source number
-            used: 2, // use of energy
-            add: 4, // add ore per frames index of addFramesSteps
+            used: 1, // use of energy
+            add: 3, // add ore per frames index of addFramesSteps
         },
         components: {
             count: 0, // current source number
@@ -154,7 +154,7 @@ export const state = {
     opponent: {
         totalOreMined : 0,
         energy: {
-            used: 4, // use of energy
+            used: 3, // use of energy
             max: 5,  // all energy slots
             upgrade: {
                 components: 6,
@@ -164,8 +164,8 @@ export const state = {
         },
         ore: {
             count: 0, // current source number
-            used: 2, // use of energy
-            add: 4, // add ore per frames index of addFramesSteps
+            used: 1, // use of energy
+            add: 3, // add ore per frames index of addFramesSteps
         },
         components: {
             count: 0, // current source number

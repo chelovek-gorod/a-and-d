@@ -20,11 +20,18 @@ export const events = {
 
     resetAddTower: 'resetAddTower',
 
-    addTowerMiniMap: 'addTowerMiniMap',
+    addTowerOnMiniMap: 'addTowerOnMiniMap',
 
     startAttackWave: 'startAttackWave',
 
     setBaseDamageFrom: 'setBaseDamageFrom',
+
+    playerTowerUpgrade: 'playerTowerUpgrade',
+    opponentTowerUpgrade: 'opponentTowerUpgrade',
+
+    showResults: 'showResults',
+
+    restartMenu: 'restartMenu',
 }
 
 export function screenResize( data ) {
@@ -76,8 +83,8 @@ export function resetAddTower(type) {
     EventHub.emit( events.resetAddTower, type )
 } 
 
-export function addTowerMiniMap(data) {
-    EventHub.emit( events.addTowerMiniMap, data )
+export function addTowerOnMiniMap(data) {
+    EventHub.emit( events.addTowerOnMiniMap, data )
 }
 
 export function startAttackWave() {
@@ -86,6 +93,21 @@ export function startAttackWave() {
 
 export function setBaseDamageFrom(enemy) {
     EventHub.emit( events.setBaseDamageFrom, enemy )
+}
+
+export function playerTowerUpgrade() {
+    EventHub.emit( events.playerTowerUpgrade )
+}
+export function opponentTowerUpgrade() {
+    EventHub.emit( events.opponentTowerUpgrade )
+}
+
+export function showResults(data) {
+    EventHub.emit( events.showResults, data )
+}
+
+export function restartMenu() {
+    EventHub.emit( events.restartMenu )
 }
 
 /*

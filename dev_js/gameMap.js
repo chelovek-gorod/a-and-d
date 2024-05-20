@@ -3,7 +3,7 @@ import { sprites, sounds } from "./loader"
 import { EventHub, events, resetAddTower, componentsOnChange } from './events'
 import { state } from './state'
 import { playSound } from './sound'
-import { tickerAdd, tickerRemove } from "./application"
+import { tickerAdd, tickerRemove, clearContainer } from "./application"
 import { buildTower } from "./towers"
 import { BombCarrier, Spider, Plane, Airship } from "./army"
 
@@ -40,9 +40,9 @@ export const buildInfo = {
     }
 }
 
-const towersToBuildList = []
+let towersToBuildList = []
 
-let trees = []
+let trees = [0,]
 let treeIndex = 0
 let lastLineTrees = []
 let currentLineTrees = []
@@ -89,7 +89,7 @@ class StartPoint extends AnimatedSprite {
         this.position.y = y + settings.ceilHalfSize
         this.animationSpeed = 0.5
         this.play()
-        gameMap.markers.addChild(this)
+        gameMap.baseContainer.addChild(this)
     }
 }
 
@@ -115,7 +115,7 @@ class Base extends AnimatedSprite {
 
     buildComplete() {
         const buildData = towersToBuildList.shift()
-        gameMap.slots.children[buildData.slotIndex].buildTower(buildData.towerType)
+        if (buildData) gameMap.slots.children[buildData.slotIndex].buildTower(buildData.towerType)
 
         if (towersToBuildList.length === 0) {
             this.stop()
@@ -159,9 +159,9 @@ class Slot extends AnimatedSprite {
     constructor(x, y) {
         super(sprites.slot.animations.open)
         this.anchor.set(0.5)
-        this.position.x = x + settings.ceilHalfSize
-        this.position.y = y + settings.ceilHalfSize
-        this.pointer = new SlotPointer(x + settings.ceilHalfSize, y + settings.ceilHalfSize)
+        this.position.x = x
+        this.position.y = y
+        this.pointer = new SlotPointer(x, y)
         this.isEmpty = true
         this.index = gameMap.slots.children.length
         this.loop = false
@@ -192,12 +192,36 @@ class Slot extends AnimatedSprite {
     }
 
     buildComplete(type) {
-        buildTower(type, this.position.x, this.position.y, gameMap)
+        buildTower(type, this.position.x, this.position.y, 'player', gameMap)
         this.textures = sprites.slot.animations.close
         this.onComplete = null
         this.animationSpeed = 0.25
         this.play()
     }
+}
+
+EventHub.on( events.showResults, clearMap )
+function clearMap() { console.log('clear game map')
+    clearContainer(gameMap.markers)
+    clearContainer(gameMap.air)
+    clearContainer(gameMap.bullets)
+    clearContainer(gameMap.effects)
+    clearContainer(gameMap.towers)
+    clearContainer(gameMap.radiuses)
+    clearContainer(gameMap.shadows)
+    clearContainer(gameMap.ground)
+    gameMap.attackers = []
+
+
+    buildInfo.type = ''
+    buildInfo.price = 0
+    buildInfo.isActive = false
+
+    towersToBuildList = []
+    let slots = []
+    gameMap.slots.children.forEach(slot => slots.push({x: slot.position.x, y: slot.position.y}))
+    clearContainer(gameMap.slots)
+    slots.forEach(point => new Slot(point.x, point.y))
 }
 
 class GameMap extends Container {
@@ -223,44 +247,18 @@ class GameMap extends Container {
         this.airStartPoints = []
         this.groundStartPoints = []
         this.attackers = []
-        
+
+        this.mapScheme = mapScheme
+        this.startX = -(mapScheme[0].length * settings.ceilSize * 0.5) 
+        this.startY = -(mapScheme.length * settings.ceilSize)
+
         setTrees(bgName)
-
-        const startX = -(mapScheme[0].length * settings.ceilSize * 0.5) 
-        const startY = -(mapScheme.length * settings.ceilSize)
-
-        for(let line = 0; line < mapScheme.length; line++) {
-            for(let index = 0; index < mapScheme[line].length; index++) {
-                const pointX = startX + index * settings.ceilSize
-                const pointY = startY + line * settings.ceilSize
-
-                if (mapScheme[line][index] !== 'b') addTree(pointX, pointY)
-                if (index === mapScheme[line].length - 1) {
-                    addTree(pointX + settings.ceilSize, pointY)
-                    lastLineTrees = [...currentLineTrees]
-                    currentLineTrees = []
-                }
-                if (line === mapScheme.length - 1) {
-                    addTree(pointX, pointY + settings.ceilSize)
-                    if (index === mapScheme[line].length - 1) addTree(pointX + settings.ceilSize, pointY + settings.ceilSize)
-                }
-
-                switch(mapScheme[line][index]) {
-                    case 'A' : this.airStartPoints.push( new StartPoint(pointX, pointY) ); break;
-                    case 'G' : this.groundStartPoints.push( new StartPoint(pointX, pointY) ); break;
-                    case 'x' : new Slot(pointX, pointY); break;
-                    case 'B' : if (this.base === null) this.base = new Base(pointX, pointY); break;
-                }
-            }
-        }
+        this.fillMap(true)
 
         this.airStartPointIndex = Math.floor( Math.random() * this.airStartPoints.length )
         this.groundStartPointIndex = Math.floor( Math.random() * this.groundStartPoints.length )
 
         this.screenResize( screenData )
-        EventHub.on( events.screenResize, this.screenResize.bind(this) )
-
-        EventHub.on( events.startAttackWave, this.startAttackWave.bind(this) )
     }
 
     screenResize(screenData) {
@@ -280,10 +278,10 @@ class GameMap extends Container {
 
     addAttacker() {
         switch( this.attackers.pop() ) {
-            case 'bombCarrier' : this.ground.addChild( new BombCarrier( this.getStartPoint('ground'), 'player_red', this.base, 'opponent') ); break;
-            case 'spider' : this.ground.addChild( new Spider( this.getStartPoint('ground'), 'player_red', this.base, 'opponent') ); break;
-            case 'plane' : this.air.addChild( new Plane( this.getStartPoint('air'), 'player_red', this.base, 'opponent') ); break;
-            case 'airship' : this.air.addChild( new Airship( this.getStartPoint('air'), 'player_red', this.base, 'opponent') ); break;
+            case 'bombCarrier' : this.ground.addChild( new BombCarrier( this.getStartPoint('ground'), 'player_red', this, 'opponent') ); break;
+            case 'spider' : this.ground.addChild( new Spider( this.getStartPoint('ground'), 'player_red', this, 'opponent') ); break;
+            case 'plane' : this.air.addChild( new Plane( this.getStartPoint('air'), 'player_red', this, 'opponent') ); break;
+            case 'airship' : this.air.addChild( new Airship( this.getStartPoint('air'), 'player_red', this, 'opponent') ); break;
         }
     }
 
@@ -305,6 +303,53 @@ class GameMap extends Container {
             }
         }
     }
+
+    updateTrees(bgName) {
+        clearContainer(this.trees)
+
+        treeIndex = 0
+        lastLineTrees = []
+        currentLineTrees = []
+
+        setTrees(bgName)
+        this.fillMap(false)
+    }
+
+    fillMap(isFirst = false) {
+        for(let line = 0; line < this.mapScheme.length; line++) {
+            for(let index = 0; index < this.mapScheme[line].length; index++) {
+                const pointX = this.startX + index * settings.ceilSize
+                const pointY = this.startY + line * settings.ceilSize
+
+                if (this.mapScheme[line][index] !== 'b') addTree(pointX, pointY)
+                if (index === this.mapScheme[line].length - 1) {
+                    addTree(pointX + settings.ceilSize, pointY)
+                    lastLineTrees = [...currentLineTrees]
+                    currentLineTrees = []
+                }
+                if (line === this.mapScheme.length - 1) {
+                    addTree(pointX, pointY + settings.ceilSize)
+                    if (index === this.mapScheme[line].length - 1) addTree(pointX + settings.ceilSize, pointY + settings.ceilSize)
+                }
+
+                if (isFirst) {
+                    switch(this.mapScheme[line][index]) {
+                        case 'A' : this.airStartPoints.push( new StartPoint(pointX, pointY) ); break;
+                        case 'G' : this.groundStartPoints.push( new StartPoint(pointX, pointY) ); break;
+                        case 'x' : new Slot(pointX + settings.ceilHalfSize, pointY + settings.ceilHalfSize); break;
+                        case 'B' : if (this.base === null) this.base = new Base(pointX, pointY); break;
+                    }
+                }
+            }
+        }
+    }
+
+    clear() {
+        
+    }
 }
+
+EventHub.on( events.screenResize, (data) => gameMap.screenResize(data) )
+EventHub.on( events.startAttackWave, () => gameMap.startAttackWave() )
 
 export default GameMap

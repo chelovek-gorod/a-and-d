@@ -4,12 +4,13 @@ import { textStyles } from "./fonts"
 import { EventHub, events, setHelpText, energyOnChange, componentsOnChange, scienceOnChange,
     oreMiningChanged, componentsMiningChanged, scienceMiningChanged,
     bombCarrierOnChange, spiderOnChange, planeOnChange, airshipOnChange,
-    startAttackWave } from './events'
+    startAttackWave, playerTowerUpgrade, showResults } from './events'
 import { state } from './state'
 import { playSound } from './sound'
-import { tickerAdd, tickerRemove } from './application'
+import { tickerAdd, tickerRemove, tickerClear } from './application'
 import { buildInfo, gameMap } from './gameMap'
-import MiniMap from './miniMap'
+import { miniMap } from './miniMap'
+import { isResult } from './game'
 
 const settings = {
     sidebarBottomHeight: 38,
@@ -748,6 +749,8 @@ class ControllerItem extends Container {
         this.radius.text = `x${ state.player.defense[type].radius }`
         this.air.text = `x${ Math.round(state.player.defense[type].speed * state.player.defense[type].air) }`
         this.ground.text = `x${ Math.round(state.player.defense[type].speed * state.player.defense[type].ground) }`
+
+        playerTowerUpgrade()
     }
 
     addAttack(type) {
@@ -948,21 +951,17 @@ class Controller extends Container {
 }
 
 class RightSidebar extends TilingSprite {
-    constructor(parent, mapScheme, bgSpriteName) {
+    constructor(parent) {
         super(sprites.ui_bg_purple)
         this.width = settings.sidebarRightWidth
 
-        this.miniMap = new MiniMap(mapScheme, bgSpriteName)
-        this.miniMap.position.x = this.miniMap.width * 0.5 + 24
-        this.miniMap.position.y = 124 + this.miniMap.height - 6
-        this.miniMap.eventMode = 'static'
-        this.miniMap.on('pointerenter', () => setHelpText('Спутниковое слежение за оппонентом') )
-        this.miniMap.on('pointerleave', () => setHelpText('') )
-        this.addChild(this.miniMap)
+        miniMap.position.x = 164
+        miniMap.position.y = 330
+        this.addChild(miniMap)
 
         parent.opponentBaseHP = new BaseHP('opponent', this)
-        parent.opponentBaseHP.position.x = this.miniMap.position.x
-        parent.opponentBaseHP.position.y = this.miniMap.position.y + 3
+        parent.opponentBaseHP.position.x = miniMap.position.x
+        parent.opponentBaseHP.position.y = miniMap.position.y + 3
 
         this.controller = new Controller()
         this.controller.position.x = 24
@@ -1055,32 +1054,35 @@ class BaseHP extends Container {
         this.line.beginFill(this.color)
         this.line.drawRoundedRect(-80, -6, state[this.type].defense.base.hp * 1.6, 12, 6)
         this.line.endFill()
+
+        if (state[this.type].defense.base.hp === 0) {
+            const data = {
+                isWin: this.type === 'opponent',
+                isBaseDestroyed: true,
+                playerOreMinded: state.player.totalOreMined,
+                opponentOreMiOreMinded: state.opponent.totalOreMined
+            }
+            gameUI.stop()
+            tickerClear()
+            showResults(data)
+        }
     }
 }
 
 class GameIU extends Container {
-    constructor(screenData, mapScheme, bgSpriteName) {
+    constructor(screenData) {
         super()
 
         this.waveTexts= ['ПЕРВАЯ', 'ВТОРАЯ', 'ПОСЛЕДНЯЯ']
-        this.waveTimeout = state.waveTimeouts[state.currentWave]
         this.waveInfo = new InfoText('wave', this)
         this.oreInfo = new InfoText('ore', this)
 
         this.sidebarBottom = new BottomSidebar(this)
-        this.sidebarRight = new RightSidebar(this, mapScheme, bgSpriteName)
+        this.sidebarRight = new RightSidebar(this)
         this.sidebarTop = new TopSidebar(this)
 
         this.playerBaseHP = new BaseHP('player', this)
         // this.opponentBaseHP  - added in rightSideBar -> miniMap
-
-        this.frames = 0
-        this.oreAddAtFrame = state.player.ore.used ? state.addFramesSteps[state.player.ore.add] : Infinity
-        this.componentsAddAtFrame = state.player.components.used ? state.addFramesSteps[state.player.components.add] : Infinity
-        this.scienceAddAtFrame = state.player.science.used ? state.addFramesSteps[state.player.science.add] : Infinity
-
-        this.addAttackersTimeout = 0
-        state.nexUnitTimeout = state.nexUnitDelays[state.currentWave]
 
         this.screenResize( screenData )
         EventHub.on( events.screenResize, this.screenResize.bind(this) )
@@ -1134,7 +1136,97 @@ class GameIU extends Container {
     start(opponent) {
         this.opponent = opponent
 
+        this.waveTimeout = state.waveTimeouts[state.currentWave]
         state.attackTimeout = state.waveTimeouts[state.currentWave]
+
+        this.frames = 0
+        this.oreAddAtFrame = state.player.ore.used ? state.addFramesSteps[state.player.ore.add] : Infinity
+        this.componentsAddAtFrame = state.player.components.used ? state.addFramesSteps[state.player.components.add] : Infinity
+        this.scienceAddAtFrame = state.player.science.used ? state.addFramesSteps[state.player.science.add] : Infinity
+
+        this.addAttackersTimeout = 0
+        state.nextUnitTimeout = state.nextUnitDelays[state.currentWave]
+
+        this.sidebarTop.attack_slot_bombCarrier.counterText.text = `x${state.player.attack.bombCarrier.count}`
+        this.sidebarTop.attack_slot_spider.counterText.text = `x${state.player.attack.spider.count}`
+        this.sidebarTop.attack_slot_plane.counterText.text = `x${state.player.attack.plane.count}`
+        this.sidebarTop.attack_slot_airship.counterText.text = `x${state.player.attack.airship.count}`
+
+        this.sidebarTop.sourceBar.energy_text.text = `${state.player.energy.used} / ${state.player.energy.max}`
+        this.sidebarTop.sourceBar.ore_energy_text.text = `x${state.player.ore.used}`
+        this.sidebarTop.sourceBar.ore_counter_text.text = `${state.player.ore.count}`
+        this.sidebarTop.sourceBar.ore_info_text.text = `+${getAddPerSecond('ore')}/сек.`
+        this.sidebarTop.sourceBar.components_sources_text.text = `x${state.player.components.used}`
+        this.sidebarTop.sourceBar.components_counter_text.text = `${state.player.components.count}`
+        this.sidebarTop.sourceBar.components_info_text.text = `+${getAddPerSecond('components')}/сек.`
+        this.sidebarTop.sourceBar.science_sources_text.text = `x${state.player.science.used}`
+        this.sidebarTop.sourceBar.science_counter_text.text = `${state.player.science.count}`
+        this.sidebarTop.sourceBar.science_info_text.text = `+${getAddPerSecond('science')}/сек.`
+
+        this.sidebarRight.controller.energy.price_components.text = `x${state.player.energy.upgrade.components}`
+        this.sidebarRight.controller.energy.price_science.text = `x${state.player.energy.upgrade.science}`
+        this.sidebarRight.controller.energy.checkEnergyBtnAlpha()
+
+        /*
+        this.sidebarRight.controller.ore
+        this.sidebarRight.controller.components
+        this.sidebarRight.controller.science
+        */
+        const sourceTypes = ['ore', 'components', 'science']
+        sourceTypes.forEach( type => {
+            if ((state.player[type].add + 1) === state.addFramesSteps.length) {
+                this.sidebarRight.controller[type].btn_left_info.text = `${getAddPerSecond(type)}/с.`
+                this.sidebarRight.controller[type].btn_left.alpha = 0.5
+            } else {
+                this.sidebarRight.controller[type].btn_left_info.text = `${getAddPerSecond(type, 1, true)}/с.`
+                this.sidebarRight.controller[type].btn_left.alpha = state.player.energy.max === state.player.energy.used ? 0.5 : 1
+            }
+
+            let btn_right_info = (state.player[type].used < 2) ? '0' : getAddPerSecond(type, -1)
+            this.sidebarRight.controller[type].btn_right.alpha = state.player[type].used === 0 ? 0.5 : 1
+            this.sidebarRight.controller[type].btn_right_info.text = `${btn_right_info}/с.`
+        })
+        
+        /*
+        this.sidebarRight.controller.gatling
+        this.sidebarRight.controller.rocket
+        this.sidebarRight.controller.tesla
+        */
+        const defenseTypes = ['gatling', 'rocket', 'tesla']
+        defenseTypes.forEach( type => {
+            this.sidebarRight.controller[type].radius.text = `x${state.player.defense[type].radius}`
+            this.sidebarRight.controller[type].air.text = `x${Math.round(state.player.defense[type].speed * state.player.defense[type].air)}`
+            this.sidebarRight.controller[type].ground.text = `x${Math.round(state.player.defense[type].speed * state.player.defense[type].ground)}`
+            this.sidebarRight.controller[type].btn_price_components.text = `x${state.player.defense[type].price}`
+            this.sidebarRight.controller[type].btn_price_science.text = `x${state.player.defense[type].upgrade.price}`
+            this.sidebarRight.controller[type].checkAddDefenseBtnAlpha('gatling')
+            this.sidebarRight.controller[type].checkUpgradeDefenseBtnAlpha(type)
+        })
+
+        this.sidebarRight.controller.repair.price_components.text = `x${state.player.defense.base.repair.components}`
+        this.sidebarRight.controller.repair.price_science.text = `x${state.player.defense.base.repair.science}`
+        this.sidebarRight.controller.repair.checkRepairBtnAlpha()
+        
+        /*
+        this.sidebarRight.controller.bombCarrier
+        this.sidebarRight.controller.spider
+        this.sidebarRight.controller.plane
+        this.sidebarRight.controller.airship
+        */
+        const attackTypes = ['bombCarrier', 'spider', 'plane', 'airship']
+        attackTypes.forEach( type => {
+            this.sidebarRight.controller[type].speed.text = `x${state.player.attack[type].speed}`
+            this.sidebarRight.controller[type].power.text = `x${state.player.attack[type].power}`
+            this.sidebarRight.controller[type].armor.text = `x${state.player.attack[type].armor}`
+            this.sidebarRight.controller[type].btn_price_components.text = `x${state.player.attack[type].price}`
+            this.sidebarRight.controller[type].btn_price_science.text = `x${state.player.attack[type].upgrade.price}`
+            this.sidebarRight.controller[type].checkAddAttackBtnAlpha(type)
+            this.sidebarRight.controller[type].checkUpgradeAttackBtnAlpha(type)
+        })
+        
+        this.playerBaseHP.update()
+        this.opponentBaseHP.update()
+
         this.updateWaveInfo()
         tickerAdd(this)
     }
@@ -1151,7 +1243,7 @@ class GameIU extends Container {
                 }
             } else {
                 playSound(sounds.attack_wave_start)
-                state.nexUnitTimeout = state.nexUnitDelays[state.currentWave]
+                state.nextUnitTimeout = state.nextUnitDelays[state.currentWave]
 
                 state.currentWave++
                 if (state.currentWave < state.waveTimeouts.length) {
@@ -1163,15 +1255,40 @@ class GameIU extends Container {
                 }
 
                 startAttackWave()
-                this.addAttackersTimeout = (gameMap.attackers.length) ? state.nexUnitTimeout : 0
+                this.addAttackersTimeout = (gameMap.attackers.length) ? state.nextUnitTimeout : 0
+
+                bombCarrierOnChange()
+                spiderOnChange()
+                planeOnChange()
+                airshipOnChange()
+            }
+        } else {
+            if ( isResult === false
+            && state.currentWave ===state.waveTimeouts.length
+            && gameMap.attackers.length === 0
+            && miniMap.attackers.length === 0
+            && gameMap.air.children.length === 0
+            && gameMap.ground.children.length === 0
+            && miniMap.air.children.length === 0
+            && miniMap.ground.children.length === 0) {
+                const data = {
+                    isWin: state.player.totalOreMined > state.opponent.totalOreMined,
+                    isBaseDestroyed: false,
+                    playerOreMinded: state.player.totalOreMined,
+                    opponentOreMiOreMinded: state.opponent.totalOreMined
+                }
+                this.stop()
+                tickerClear()
+                return showResults(data)
             }
         }
 
         if (this.addAttackersTimeout) {
             this.addAttackersTimeout -= delta
             if (this.addAttackersTimeout <= 0) {
-                gameMap.addAttacker()
-                this.addAttackersTimeout = (gameMap.attackers.length) ? state.nexUnitTimeout : 0
+                if (gameMap.attackers.length) gameMap.addAttacker()
+                if (miniMap.attackers.length) miniMap.addAttacker()
+                this.addAttackersTimeout = (gameMap.attackers.length) ? state.nextUnitTimeout : 0
             }
         }
 

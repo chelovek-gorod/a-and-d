@@ -103,6 +103,28 @@ export function initFontStyles() {
             strokeThickness: 4
         }),
 
+        result_title_win: new TextStyle({
+            fontFamily: fonts.bold,
+            fontSize: 120,
+            fill: ['#ffffff', '#00ff00', '#ffffff'],
+            stroke: '#0000ff',
+            strokeThickness: 8
+        }),
+        result_title_lose: new TextStyle({
+            fontFamily: fonts.bold,
+            fontSize: 120,
+            fill: ['#ffffff', '#777777', '#ffffff'],
+            stroke: '#000000',
+            strokeThickness: 8
+        }),
+        result_description: new TextStyle({
+            fontFamily: fonts.bold,
+            fontSize: 60,
+            fill: ['#ffffff', '#777777', '#ffffff'],
+            stroke: '#000000',
+            strokeThickness: 4
+        }),
+
         // EXAMPLES
         /*
         gradientText: new TextStyle({

@@ -1,4 +1,4 @@
-import { EventHub, events, addTowerMiniMap } from './events'
+import { EventHub, events, addTowerOnMiniMap } from './events'
 import { state } from './state'
 
 const settings = {
@@ -57,7 +57,8 @@ class Opponent {
     update(frame) {
         if (this.guns.length && this.guns[0].timeout <= frame) {
             let tower = this.guns.shift()
-            addTowerMiniMap({type: tower.name, index: tower.index})
+            // data -> {towerType: buildInfo.type, slotIndex: this.index}
+            addTowerOnMiniMap({towerType: tower.name, slotIndex: tower.index})
         }
 
         if (this.armyAddTimeout <= frame) {

@@ -5,12 +5,12 @@ import { removeSprite } from "./application"
 import { gameMap } from "./gameMap"
 
 class Effect extends AnimatedSprite {
-    constructor(x, y, effect) {
+    constructor(x, y, effect, parent) {
         super(sprites[effect].animations.effect)
         this.anchor.set(0.5)
         this.position.x = x
         this.position.y = y
-        gameMap.effects.addChild(this)
+        parent.effects.addChild(this)
         this.onLoop = () => removeSprite(this)
         //this.animationSpeed = 0.5
         this.play()

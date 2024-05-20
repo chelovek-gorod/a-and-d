@@ -68,13 +68,17 @@ export class Layer extends Container {
     }
 
     clearLayer() {
-        this.children.forEach(element => element.destroy( {children : true} ))
+        this.children.forEach(element => element.destroy())
     }
 
     removeLayer() {
         this.clearLayer()
         app.stage.removeChild( this )
     }
+}
+
+export function clearStage() {
+    clearContainer( app.stage  )
 }
 
 export function clearContainer( container ) {
@@ -85,7 +89,7 @@ export function clearContainer( container ) {
 
 export function removeSprite( sprite ) {
     if (sprite.parent) sprite.parent.removeChild( sprite )
-    sprite.destroy( {children : true} )
+    sprite.destroy()
 }
 
 export function tickerAdd( element ) {
@@ -95,6 +99,11 @@ export function tickerAdd( element ) {
 
 export function tickerRemove( element ) {
     tickerArr = tickerArr.filter( e => e !== element )
+}
+
+export function tickerClear() {
+    tickerArr = []
+    console.log('ticker cleared')
 }
 
 export function tickerRun() {

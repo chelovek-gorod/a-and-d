@@ -16,6 +16,10 @@ class Background extends TilingSprite {
         this.position.x = 0
         this.position.y = 0
     }
+
+    setImage(backgroundImage) {
+        this.texture = sprites[backgroundImage]
+    }
 }
 
 export default Background

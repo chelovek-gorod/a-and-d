@@ -12,6 +12,9 @@ const paths = {
 
 export const sprites = {
     main_menu_background: 'main_background_image_2048x2048px.jpg',
+    lose_background: 'lose_background_image_2800x1600px.jpg',
+    win_background: 'win_background_image_2800x1600px.jpg',
+
     background_tile_1: 'bg1_192x192px.png',
     background_tile_2: 'bg2_256x256px.png',
     background_tile_3: 'bg3_350x350px.png',
